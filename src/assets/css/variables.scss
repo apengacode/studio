@@ -1,0 +1,18 @@
+@use './margin.scss';
+@use './padding.scss';
+@use './flex.scss';
+
+.v-bh-hide {
+  display: none;
+}
+
+.v-bh-show {
+  display: block;
+}
+
+.v-str-cut {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
