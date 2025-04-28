@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { DISPLAY_TYPE } from '@/const';
 export const usePinia = defineStore('dictionary', {
   state: () => {
     return {
@@ -14,68 +15,68 @@ export const usePinia = defineStore('dictionary', {
       ],
       displayType: [
         {
-          id: 'text',
+          id: DISPLAY_TYPE.TEXT,
           name: '文本',
         },
         {
-          id: 'number',
+          id: DISPLAY_TYPE.NUMBER,
           name: '数字',
         },
         {
-          id: 'number-range',
+          id: DISPLAY_TYPE.NUMBER_RANGE,
           name: '数字范围',
         },
         {
-          id: 'textarea',
+          id: DISPLAY_TYPE.TEXTAREA,
           name: '文本域',
         },
         {
-          id: 'select',
+          id: DISPLAY_TYPE.SELECT,
           name: '下拉单选',
         },
         {
-          id: 'select-multiple',
+          id: DISPLAY_TYPE.SELECT_MULTIPLE,
           name: '下拉多选',
         },
         {
-          id: 'date-local',
+          id: DISPLAY_TYPE.DATE_LOCAL,
           name: '日期',
         },
         {
-          id: 'date-local-range',
+          id: DISPLAY_TYPE.DATE_LOCAL_RANGE,
           name: '日期范围',
         },
         {
-          id: 'date-ym',
+          id: DISPLAY_TYPE.DATE_YM,
           name: '年月',
         },
         {
-          id: 'date-ym-range',
+          id: DISPLAY_TYPE.DATE_YM_RANGE,
           name: '年月范围',
         },
         {
-          id: 'date-time',
+          id: DISPLAY_TYPE.DATE_TIME,
           name: '日期及时间',
         },
         {
-          id: 'date-time-range',
+          id: DISPLAY_TYPE.DATE_TIME_RANGE,
           name: '日期及时间范围',
         },
         {
-          id: '上传',
+          id: DISPLAY_TYPE.FILE,
           name: 'file',
         },
         {
-          id: 'switch',
+          id: DISPLAY_TYPE.SWITCH,
           name: '开关',
         },
         {
-          id: '单选组',
-          name: 'radio',
+          id: DISPLAY_TYPE.RADIO,
+          name: '单选组',
         },
         {
-          id: '多选组',
-          name: 'checkbox',
+          id: DISPLAY_TYPE.CHECKBOX,
+          name: '多选组',
         },
       ],
       validateType: [

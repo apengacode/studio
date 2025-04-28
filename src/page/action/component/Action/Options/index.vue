@@ -1,16 +1,16 @@
 <template>
   <div class="optionsRoot" v-if="options">
-    <Title size="16"> 属性配置 </Title>
+    <Title size="16"> {{ options.caption }} </Title>
     <main>
       <el-form :model="form" label-width="auto">
-        <el-collapse v-model="activeNames" @change="handleChange">
+        <el-collapse v-model="activeNames">
           <el-collapse-item name="1">
             <template #title>
               <Title size="14" :margin="false"> 基础属性 </Title>
             </template>
             <el-form-item label="字典配置">
               <!-- <el-input v-model="form.name" /> -->
-              <Dialog title="数据字典"></Dialog>
+              <!-- <Dialog title="数据字典"></Dialog> -->
             </el-form-item>
           </el-collapse-item>
           <el-collapse-item name="2">
@@ -65,7 +65,7 @@
               />
             </el-form-item>
             <el-form-item label="显示类型">
-              <el-select v-model="form.displayType" filterable clearable>
+              <el-select v-model="form.displayType" filterable>
                 <el-option
                   v-for="item in store.displayType"
                   :key="item.id"
@@ -122,6 +122,30 @@
             <el-form-item label="列宽（px或%）">
               <el-input v-model="form['grid.width']" clearable />
             </el-form-item>
+            <el-form-item label="长度">
+              <el-input-number
+                style="width: 100%; text-align: left"
+                v-model="form['grid.validLength']"
+                clearable
+                :min="1"
+                :step="1"
+                :step-strictly="true"
+                :controls="false"
+              />
+            </el-form-item>
+            <el-form-item label="类型">
+              <el-select v-model="form['grid.validType']" filterable clearable>
+                <el-option
+                  v-for="item in store.validateType"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="正则表达式">
+              <el-input v-model="form['grid.validRule']" clearable />
+            </el-form-item>
           </el-collapse-item>
           <el-collapse-item name="5">
             <template #title>
@@ -177,11 +201,48 @@
             <el-form-item label="联动字段">
               <el-input v-model="form['form.linkField']" clearable />
             </el-form-item>
+            <el-form-item label="文本框占位符">
+              <el-input v-model="form['form.placeholder']" clearable />
+            </el-form-item>
+            <el-form-item label="长度">
+              <el-input-number
+                style="width: 100%; text-align: left"
+                v-model="form['form.validLength']"
+                clearable
+                :min="1"
+                :step="1"
+                :step-strictly="true"
+                :controls="false"
+              />
+            </el-form-item>
+            <el-form-item label="类型">
+              <el-select v-model="form['form.validType']" filterable clearable>
+                <el-option
+                  v-for="item in store.validateType"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="正则表达式">
+              <el-input v-model="form['form.validRule']" clearable />
+            </el-form-item>
           </el-collapse-item>
           <el-collapse-item name="6">
             <template #title>
               <Title size="14" :margin="false"> 查询显示属性 </Title>
             </template>
+            <el-form-item label="是否查询">
+              <el-select v-model="form['search.search']" filterable clearable>
+                <el-option
+                  v-for="item in store.yesOrNo"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
             <el-form-item label="快速查询">
               <el-select
                 v-model="form['search.quickSearch']"
@@ -198,16 +259,6 @@
             </el-form-item>
             <el-form-item label="是否必填">
               <el-select v-model="form['search.required']" filterable clearable>
-                <el-option
-                  v-for="item in store.yesOrNo"
-                  :key="item.id"
-                  :label="item.name"
-                  :value="item.id"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="是否隐藏">
-              <el-select v-model="form['search.hidden']" filterable clearable>
                 <el-option
                   v-for="item in store.yesOrNo"
                   :key="item.id"
@@ -240,23 +291,42 @@
                 />
               </el-select>
             </el-form-item>
-            <el-form-item label="所占列数">
-              <el-input-number
-                style="width: 100%; text-align: left"
-                v-model="form['search.columnNumber']"
-                clearable
-                :min="1"
-                :max="12"
-                :step="1"
-                :step-strictly="true"
-                :controls="false"
-              />
-            </el-form-item>
             <el-form-item label="联动地址">
               <el-input v-model="form['search.linkUrl']" clearable />
             </el-form-item>
             <el-form-item label="联动字段">
               <el-input v-model="form['search.linkField']" clearable />
+            </el-form-item>
+            <el-form-item label="文本框占位符">
+              <el-input v-model="form['search.placeholder']" clearable />
+            </el-form-item>
+            <el-form-item label="长度">
+              <el-input-number
+                style="width: 100%; text-align: left"
+                v-model="form['search.validLength']"
+                clearable
+                :min="1"
+                :step="1"
+                :step-strictly="true"
+                :controls="false"
+              />
+            </el-form-item>
+            <el-form-item label="类型">
+              <el-select
+                v-model="form['search.validType']"
+                filterable
+                clearable
+              >
+                <el-option
+                  v-for="item in store.validateType"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="正则表达式">
+              <el-input v-model="form['search.validRule']" clearable />
             </el-form-item>
           </el-collapse-item>
           <el-collapse-item name="7">
@@ -296,10 +366,9 @@
 </template>
 <script setup lang="ts">
 import { reactive, toRefs, watch } from 'vue';
-import { usePinia } from '../../../stores/dictionary';
+import { usePinia } from '@/stores/dictionary';
 import type { FieldData } from '../Fields/type';
-import Title from '../../Title/index.vue';
-import Dialog from '../../Dialog/index.vue';
+import Title from '@/components/Title/index.vue';
 
 const store = usePinia();
 
@@ -310,13 +379,16 @@ const state = reactive<{ activeNames: string[]; form: FieldData }>({
     hidden: undefined,
     readonly: undefined,
     columnNumber: undefined,
-    displayType: undefined,
+    displayType: '',
 
     'grid.required': undefined,
     'grid.hidden': undefined,
     'grid.readonly': undefined,
     'grid.fixed': undefined,
     'grid.width': undefined,
+    'grid.validRule': undefined,
+    'grid.validLength': undefined,
+    'grid.validType': undefined,
 
     'form.required': undefined,
     'form.hidden': undefined,
@@ -324,15 +396,22 @@ const state = reactive<{ activeNames: string[]; form: FieldData }>({
     'form.displayType': undefined,
     'form.linkUrl': undefined,
     'form.linkField': undefined,
+    'form.placeholder': undefined,
+    'form.validRule': undefined,
+    'form.validLength': undefined,
+    'form.validType': undefined,
 
+    'search.search': undefined,
     'search.quickSearch': undefined,
     'search.required': undefined,
-    'search.hidden': undefined,
     'search.readonly': undefined,
     'search.displayType': undefined,
     'search.linkUrl': undefined,
     'search.linkField': undefined,
-    'search.columnNumber': undefined,
+    'search.placeholder': undefined,
+    'search.validRule': undefined,
+    'search.validLength': undefined,
+    'search.validType': undefined,
 
     'validate.rule': undefined,
     'validate.length': undefined,
@@ -344,8 +423,6 @@ const props = defineProps<{ options: FieldData | undefined }>();
 const { activeNames, form } = toRefs(state);
 const { options } = toRefs(props);
 
-const emit = defineEmits(['reportOptionsValue'])
-
 watch(
   options,
   (newVal) => {
@@ -355,14 +432,6 @@ watch(
   },
   { deep: true, immediate: true },
 );
-
-
-watch(form, (newVal) => {
-  console.log(newVal)
-  // emit('reportOptionsValue', newVal)
-}, {deep: true, immediate: true})
-
-const handleChange = () => {};
 </script>
 <style scoped lang="scss">
 .emptyContainer {

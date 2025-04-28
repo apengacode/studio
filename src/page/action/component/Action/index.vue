@@ -9,20 +9,26 @@
       <el-tab-pane v-for="tab in tabs" :name="tab.id" :label="tab.name" />
     </el-tabs>
     <div class="actionContainer" v-if="activeTab">
-      <Fields @set-field-options="onSetFieldOptions" :actionId="activeTab" />
-      <Options :options="currentFieldOptions" />
+      <Fields
+        ref="fieldsRef"
+        @set-field-options="onSetFieldOptions"
+        :actionId="activeTab"
+      />
+      <Options
+        :options="currentFieldOptions"
+      />
     </div>
     <div class="emptyContainer" v-else>请选择左侧节点</div>
     <footer v-show="activeTab">
-      <el-button type="primary" size="small">保存</el-button>
+      <el-button type="primary" size="default" @click="onSave">保存</el-button>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { toRefs, reactive, watch, computed } from 'vue';
+import { toRefs, reactive, watch, ref } from 'vue';
 import type { TabPaneName } from 'element-plus';
-import type { TreeNode } from '../../page/home/types';
+import type { TreeNode } from '@/page/action/types';
 import Fields from './Fields/index.vue';
 import Options from './Options/index.vue';
 import type { FieldData } from './Fields/type';
@@ -58,9 +64,10 @@ const state = reactive<{
 });
 const { tabs, activeTab, currentFieldOptions } = toRefs(state);
 
+const fieldsRef = ref<InstanceType<typeof Fields> | null>(null);
+
 // 移除关闭tab
 const onTabRemove = (val: TabPaneName) => {
-  console.log(val);
   if (val === activeTab.value) {
     resetFieldOptions();
   }
@@ -81,18 +88,14 @@ const onSetFieldOptions = (options: FieldData) => {
   currentFieldOptions.value = options;
 };
 
-const currentTabData = computed(() => {
-  if (activeTab.value) {
-    return tabs.value.find((tab) => {
-      return tab.id === activeTab.value;
-    });
-  }
-  return undefined;
-});
 
 const resetFieldOptions = () => {
   currentFieldOptions.value = undefined;
 };
+const onSave = () => {
+  const list =  fieldsRef.value?.getData();
+  localStorage.setItem(activeTab.value as string, JSON.stringify(list))
+}
 </script>
 
 <style scoped lang="scss">

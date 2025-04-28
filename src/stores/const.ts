@@ -4,7 +4,7 @@ export const usePinia = defineStore('const', {
     return {
       defaultFieldValue: {
         fieldName: undefined,
-        zhCn: undefined,
+        caption: undefined,
         enUs: undefined,
         editabled: false,
 

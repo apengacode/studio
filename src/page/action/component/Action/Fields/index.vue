@@ -81,10 +81,10 @@
             <span v-show="!scope.row.editabled">{{ scope.row.fieldName }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="zhCn" label="中文名" width="180">
+        <el-table-column prop="caption" label="中文名" width="180">
           <template v-slot="scope">
-            <el-input v-show="scope.row.editabled" v-model="scope.row.zhCn" />
-            <span v-show="!scope.row.editabled">{{ scope.row.zhCn }}</span>
+            <el-input v-show="scope.row.editabled" v-model="scope.row.caption" />
+            <span v-show="!scope.row.editabled">{{ scope.row.caption }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="enUs" label="英文名">
@@ -102,7 +102,7 @@
 import { reactive, toRefs, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Search, Plus, Top, Bottom } from '@element-plus/icons-vue';
-import Title from '../../Title/index.vue';
+import Title from '@/components/Title/index.vue';
 import type { State, FieldData } from './type';
 import { usePinia } from '@/stores/const';
 import uuid from '@/utils/uuid';
@@ -112,7 +112,7 @@ const state = reactive<State>({
   tableData: [],
   fieldForm: {
     fieldName: undefined,
-    zhCn: undefined,
+    caption: undefined,
     enUs: undefined,
   },
   fieldFormRules: {
@@ -120,7 +120,7 @@ const state = reactive<State>({
       { required: true, message: '请输入字段名', trigger: 'blur' },
       { min: 1, max: 20, message: '长度应在1-20', trigger: 'blur' },
     ],
-    zhCn: [
+    caption: [
       { required: true, message: '请输入中文', trigger: 'blur' },
       { min: 1, max: 50, message: '长度应在1-50', trigger: 'blur' },
     ],
@@ -167,7 +167,7 @@ const validate: (row: FieldData) => boolean = (row) => {
     });
     return false;
   }
-  if (!row.zhCn) {
+  if (!row.caption) {
     ElMessage({
       message: '中文必填',
       type: 'warning',
@@ -221,35 +221,11 @@ const onMove = (direction: string) => {
 };
 
 const getActionFieldDatas = (actionId: string) => {
-  if (actionId === '1-1-1') {
-    tableData.value = [
-      {
-        ...defaultFieldValue.value,
-        editabled: false,
-        id: '1823012judjaksjdn',
-        fieldName: 'name',
-        zhCn: '姓名',
-        enUs: 'name',
-      },
-      {
-        ...defaultFieldValue.value,
-        editabled: false,
-        id: '1823012judjaksjdn1',
-        fieldName: 'age',
-        zhCn: '年龄',
-        enUs: 'age',
-      },
-      {
-        ...defaultFieldValue.value,
-        editabled: false,
-        id: '1823012judjaksjdn12',
-        fieldName: 'collage',
-        zhCn: '院系',
-        enUs: 'collage',
-      },
-    ];
+  let data = window.localStorage.getItem(actionId);
+  if (data) {
+    tableData.value = JSON.parse(data);
   } else {
-    tableData.value = []
+    tableData.value = [];
   }
 };
 
@@ -262,6 +238,11 @@ watch(
   },
   { deep: true, immediate: true },
 );
+
+const getData = () => {
+  return [...tableData.value];
+};
+defineExpose({ getData });
 </script>
 
 <style scoped lang="scss">

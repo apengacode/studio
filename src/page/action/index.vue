@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, toRefs } from 'vue';
-import Tree from '../../components/Tree/index.vue';
-import Action from '../../components/Action/index.vue';
+import Tree from './component/Tree/index.vue';
+import Action from './component/Action/index.vue';
 import type { TreeNode } from './types';
 import { cloneDeep } from 'lodash';
 
