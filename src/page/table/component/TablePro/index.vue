@@ -1,46 +1,200 @@
 <template>
-  <div class="table-pro-root">
-    <section class="tablepro-search">
-      <Search :columns="columns" :params="params" :defaultSearchSwitch="defaultSearchSwitch" />
+  <div class="table-pro-root" v-loading="tableLoading">
+    <section class="tablepro-search" v-if="search">
+      <Search
+        ref="searchRef"
+        @reset-page="onSearchReset"
+        @search-page="onSearch"
+        :dataLoading="dataLoading"
+        :defaultSearchSwitch="defaultSearchSwitch"
+      />
     </section>
     <section class="tablepro-operation">
-      <Operation />
-    </section>
-    <section class="tablepro-section">
-      <Section />
+      <Operation
+        :buttons="batchButtons"
+        :get-params="getParams"
+        :get-pagetotal="getPagetotal"
+        :get-checkrecord="getCheckrecord"
+      />
     </section>
     <section class="tablepro-grid">
-      <Grid />
+      <Grid
+        ref="gridRef"
+        :columns="columns"
+        :dataResourse="data"
+        :dataLoading="dataLoading"
+        :selection="selection"
+        :select-value="selectValue"
+        :select-label="selectLabel"
+        :default-selections="defaultSelections"
+        :buttons="singleButtons"
+        :get-params="getParams"
+      />
+    </section>
+    <section class="tablepro-pagination">
+      <Pagination
+        :page="page"
+        @pageSizeChange="onPageSizeChange"
+        @pageIndexChange="onPageIndexChange"
+      />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import Search from './Search/index.vue';
-import Operation from './Operation/index.vue';
-import Section from './Section/index.vue';
+import Operation from './Operations/index.vue';
+import Pagination from './Pagination/index.vue';
 import Grid from './Grid/index.vue';
-import { onMounted, reactive, toRefs } from 'vue';
-import type { Column } from './type';
+import { onMounted, reactive, toRefs, ref } from 'vue';
+import type {
+  Column,
+  RequestPage,
+  Page,
+  Response,
+  Button,
+  BatchButton,
+  SingleButton,
+} from './type';
+import { useDebounceFn } from '@/utils/fn';
+import { checkPermission } from './utils';
 
-const props = defineProps<{
-  action: string;
-  changeColumn?: (
-    columns: Column[],
-    callback: (columns: Column[]) => void,
-  ) => void;
-  params?: { [key: string]: string | undefined | null | number };
-  defaultSearchSwitch?: string
-}>();
+const props = withDefaults(
+  defineProps<{
+    action: string;
+    changeColumns?: (columns: Column[]) => Promise<Column[]>;
+    params?: { [key: string]: any } | (() => Promise<{ [key: string]: any }>);
+    defaultSearchSwitch?: string;
+    search?: boolean;
+    request: (params: any, page: RequestPage) => Promise<Response<any[]>>;
+    buttons: Button[] | (() => Promise<Button[]>);
+    selection?: boolean;
+    selectValue: string;
+    selectLabel: string;
+    defaultSelections?: { [key: string]: any }[];
+  }>(),
+  {
+    search: true,
+    params: () => ({}),
+    buttons: () => [],
+    selection: true,
+    defaultSelections: () => [],
+  },
+);
 
-const state = reactive<{ columns: Column[] | undefined }>({
-  columns: undefined,
+const state = reactive<{
+  columns: Column[];
+  data: any[];
+  page: Page;
+  tableLoading: boolean;
+  dataLoading: boolean;
+  defaultParams: { [key: string]: any };
+  batchButtons: BatchButton[];
+  singleButtons: SingleButton[];
+}>({
+  columns: [],
+  data: [],
+  page: { pageIndex: 1, pageSize: 10, total: 0 },
+  tableLoading: false,
+  dataLoading: false,
+  defaultParams: {},
+  batchButtons: [],
+  singleButtons: [],
 });
 
-const { action, changeColumn, params } = toRefs(props);
-const { columns } = toRefs(state);
+const { action, changeColumns, params, search, request, buttons, selection } =
+  toRefs(props);
+const {
+  columns,
+  data,
+  page,
+  tableLoading,
+  dataLoading,
+  defaultParams,
+  batchButtons,
+  singleButtons,
+} = toRefs(state);
 
-onMounted(() => {
+const searchRef = ref<InstanceType<typeof Search> | null>(null);
+const gridRef = ref<InstanceType<typeof Grid> | null>(null);
+
+const emits = defineEmits(['request']);
+
+const getParams = () => {
+  const requestParams = searchRef.value?.getValue();
+  return {
+    ...defaultParams.value,
+    ...requestParams,
+    pageIndex: page.value.pageIndex,
+    pageSize: page.value.pageSize,
+  };
+};
+
+// 发起数据请求
+const { run: doRequest } = useDebounceFn(
+  async () => {
+    const tableIsEmpty = gridRef.value?.getIsEmpty();
+    if (tableIsEmpty) return;
+    dataLoading.value = true;
+    const requestParams = searchRef.value?.getValue();
+    const res = await request.value(
+      {
+        ...defaultParams.value,
+        ...requestParams,
+      },
+      {
+        pageIndex: page.value.pageIndex,
+        pageSize: page.value.pageSize,
+      },
+    );
+    dataLoading.value = false;
+    if (res.success) {
+      data.value = res.data.rows;
+      page.value.total = res.data.total;
+    }
+  },
+  10,
+  { leading: false, trailing: true },
+);
+
+const onPageSizeChange = (val: number) => {
+  page.value.pageSize = val;
+  doRequest();
+};
+const onPageIndexChange = (val: number) => {
+  page.value.pageIndex = val;
+  doRequest();
+};
+
+const onSearch = () => {
+  page.value = {
+    pageIndex: 1,
+    pageSize: 10,
+    total: 0,
+  };
+  data.value = [];
+  doRequest();
+};
+
+const onSearchReset = () => {
+  page.value = {
+    pageIndex: 1,
+    pageSize: 10,
+    total: 0,
+  };
+  data.value = [];
+  doRequest();
+};
+
+const getPagetotal = () => {
+  return page.value.total;
+};
+const getCheckrecord = () => {
+  return gridRef.value?.getCheckRecord() as { [key: string]: any }[];
+};
+onMounted(async () => {
+  // 设置字段
+  tableLoading.value = true;
   let columnsResource: Column[] = [];
   let actionData = window.localStorage.getItem(action.value);
   if (!actionData) {
@@ -48,13 +202,99 @@ onMounted(() => {
   } else {
     columnsResource = JSON.parse(actionData);
   }
-  if (changeColumn.value && typeof changeColumn.value === 'function') {
-    changeColumn.value(columnsResource, (newColumns) => {
-      columns.value = newColumns;
-    });
-    return;
+  let _columns: Column[] = [];
+  if (changeColumns.value && typeof changeColumns.value === 'function') {
+    _columns = await changeColumns.value(columnsResource);
+  } else {
+    _columns = columnsResource;
   }
-  columns.value = columnsResource;
+
+  columns.value = _columns;
+
+  // 设置搜索字段 判断是否有搜索  如果search为false 则searchColumns为[] 默认的params全都是固定条件
+  let searchColumns = _columns.filter((item) => {
+    if (item['search.search'] && item['search.search'] === '1') {
+      return true;
+    }
+  });
+  if (!search.value) {
+    searchColumns = [];
+  }
+  searchRef.value?.setSearchColumns(searchColumns);
+  // 设置查询条件和固定条件
+  let _params: { [key: string]: any } = {};
+  if (params.value && typeof params.value === 'function') {
+    _params = await params.value();
+  }
+  if (params.value && typeof params.value === 'object') {
+    _params = await params.value;
+  }
+  // 区分搜索条件和固定条件
+  defaultParams.value = {};
+  const searchParams: { [key: string]: any } = {};
+  for (let k in _params) {
+    // 查询不到则为固定条件
+    const findFlag = searchColumns.some((item) => {
+      return item.fieldName === k;
+    });
+    if (findFlag) {
+      searchParams[k] = _params[k];
+    } else {
+      defaultParams.value[k] = _params[k];
+    }
+  }
+  searchRef.value?.setSearchForm(searchParams);
+  tableLoading.value = false;
+  doRequest();
+
+  // 设置按钮
+  let _buttons: Button[] = [];
+  if (buttons.value && typeof buttons.value === 'function') {
+    _buttons = await buttons.value();
+  }
+  if (buttons.value && Array.isArray(buttons.value)) {
+    _buttons = buttons.value;
+  }
+  batchButtons.value = [];
+  singleButtons.value = [];
+  const defaultButton = {
+    type: 'default',
+    checkRecords: true,
+  };
+  _buttons.forEach((btn) => {
+    if (checkPermission(btn.permission)) {
+      if (!btn.children) {
+        if (btn.canBatch) {
+          batchButtons.value.push({ ...defaultButton, ...btn } as BatchButton);
+        }
+        if (btn.canSingle) {
+          singleButtons.value.push({
+            ...defaultButton,
+            ...btn,
+          } as SingleButton);
+        }
+      } else if (btn.children.length) {
+        const children = btn.children.filter((cbtn) => {
+          return checkPermission(cbtn.permission);
+        });
+        btn.children = children;
+        if (children.length) {
+          if (btn.canBatch) {
+            batchButtons.value.push({
+              ...defaultButton,
+              ...btn,
+            } as BatchButton);
+          }
+          if (btn.canSingle) {
+            singleButtons.value.push({
+              ...defaultButton,
+              ...btn,
+            } as SingleButton);
+          }
+        }
+      }
+    }
+  });
 });
 </script>
 

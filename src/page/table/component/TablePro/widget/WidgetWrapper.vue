@@ -4,6 +4,7 @@
     :is="activeComponent"
     :column="column"
     v-model="value"
+    background
     :placeholder="placeholder"
     :readonly="readonly"
     @get-dict-recourse="onGetDictRecourse"
@@ -16,7 +17,7 @@ import { useVModel } from '@vueuse/core';
 import type { Dictionary } from '@/page/action/component/Action/Fields/type';
 import type { Column } from '../type';
 import { DISPLAY_TYPE } from '@/const';
-import Text from './TEXT.vue';
+import Text from './Text.vue';
 import Number from './Number.vue';
 import Select from './Select.vue';
 import SelectMultiple from './SelectMultiple.vue';

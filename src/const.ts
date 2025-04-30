@@ -16,3 +16,8 @@ export const DISPLAY_TYPE = {
     RADIO: 'radio',
     CHECKBOX: 'checkbox',
   }; 
+
+  export const defaultButton = {
+    type: 'default',
+    checkRecords: true
+  }

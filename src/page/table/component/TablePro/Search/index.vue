@@ -4,7 +4,7 @@
       <div class="searchItemWrapper" ref="rootRef">
         <div
           class="searchItem"
-          v-for="column in searchColumns"
+          v-for="column in columns"
           v-show="column.show === '1'"
           :style="{ width: getColumnWidth(column) + 'px' }"
         >
@@ -20,9 +20,9 @@
         </div>
 
         <div class="searchButtons" :style="searchButtonsStyle">
-          <el-button type="primary" @click="onSearch">查询</el-button>
-          <el-button>重置</el-button>
-          <el-button text type="primary" @click="onChangeSwitch"
+          <el-button type="primary" :loading="dataLoading" @click="onSearch">查询</el-button>
+          <el-button @click="onReset">重置</el-button>
+          <el-button text link type="primary" @click="onChangeSwitch"
             >{{ switchStatus === '0' ? '展开' : '收起'
             }}<el-icon class="v-ml-4"
               ><ArrowUp v-show="switchStatus === '1'" /><ArrowDown
@@ -40,38 +40,42 @@ import { ArrowUp, ArrowDown } from '@element-plus/icons-vue';
 import type { Column } from '../type';
 import WidgetWrapper from '../widget/WidgetWrapper.vue';
 import { DISPLAY_TYPE } from '@/const';
+import emitter from '@/utils/bus';
+
 
 const buttonWidth = 220;
 const searchItemWidth = 300;
 
 const props = withDefaults(
   defineProps<{
-    columns: Column[] | undefined;
-    params?: { [key: string]: string | undefined | null | number };
+    params?: { [key: string]: any } | (() => Promise<{ [key: string]: any }>);
     defaultSearchSwitch?: string;
+    dataLoading: boolean;
   }>(),
-  { columns: undefined, defaultSearchSwitch: '0' },
+  { defaultSearchSwitch: '0', dataLoading: false },
 );
 
 const rootRef = ref<HTMLElement | null>(null);
 
-const { defaultSearchSwitch } = toRefs(props);
+const { defaultSearchSwitch, dataLoading } = toRefs(props);
 
 const state = reactive<{
+  columns: Column[];
   form: any;
   rootWidth: number;
-  searchColumns: Column[];
   switchStatus: string;
   rules: any;
 }>({
   form: {},
   rootWidth: 0,
-  searchColumns: [],
   switchStatus: defaultSearchSwitch.value,
   rules: [],
+  columns: [],
 });
 
-const { form, rootWidth, searchColumns, switchStatus, rules } = toRefs(state);
+const { form, rootWidth, switchStatus, rules, columns } = toRefs(state);
+
+const emits = defineEmits(['searchPage', 'resetPage']);
 
 const onChangeSwitch = () => {
   if (switchStatus.value === '1') {
@@ -93,7 +97,12 @@ const getSearchReadonly: (column: Column) => string = (column) => {
 };
 
 const onSearch = () => {
-  console.log(form.value);
+  emits('searchPage');
+};
+
+const onReset = () => {
+  form.value = {};
+  emits('resetPage');
 };
 
 const getColumnWidth = (column: Column | undefined) => {
@@ -112,7 +121,7 @@ const searchButtonsStyle = computed(() => {
       width: '220px',
     };
   }
-  const visibleColumns = searchColumns.value.filter((item) => {
+  const visibleColumns = columns.value.filter((item) => {
     return item.show === '1';
   });
   const visibleColumnsLen = visibleColumns.length;
@@ -137,8 +146,48 @@ const searchButtonsStyle = computed(() => {
   }
 });
 
+const getValue = () => {
+  return form.value;
+};
+const setSearchForm = (val: any) => {
+  const defaultParams: { [key: string]: any } = {};
+  for (let k in val) {
+    if (val[k]) {
+      const findColumn = columns.value.find((item) => {
+        return item.fieldName === k;
+      });
+      if (!!findColumn) {
+        defaultParams[k] = val[k];
+      }
+    }
+  }
+  form.value = { ...defaultParams };
+};
+
+const setSearchColumns = (_columns: Column[]) => {
+  columns.value = _columns;
+  const _rules: { [key: string]: any[] } = {};
+  _columns.forEach((item) => {
+    const valids = [];
+    const displayType = item['search.displayType'] || item.displayType;
+
+    if (item['search.required'] && item['search.required'] === '1') {
+      valids.push({
+        required: true,
+        message: item.caption + '必填！',
+        trigger:
+          displayType === DISPLAY_TYPE.TEXT ||
+          displayType === DISPLAY_TYPE.NUMBER
+            ? 'blur'
+            : 'change',
+      });
+      _rules[item.fieldName] = valids;
+    }
+  });
+  rules.value = _rules;
+};
 watch(
-  () => [switchStatus.value, searchColumns.value],
+  () => [switchStatus.value, columns.value],
   (newVal) => {
     if (Array.isArray(newVal[1]) && newVal[1].length) {
       newVal[1].forEach((item) => {
@@ -161,46 +210,29 @@ watch(
 );
 
 watch(
-  props,
-  (newProps) => {
-    if (newProps.columns && newProps.columns.length) {
-      searchColumns.value = newProps.columns.filter((item) => {
-        if (item['search.search'] && item['search.search'] === '1') {
-          const valids = [];
-          const displayType = item['search.displayType'] || item.displayType;
-          if (item['search.required'] && item['search.required'] === '1') {
-            valids.push({
-              required: true,
-              message: item.caption + '必填！',
-              trigger:
-                displayType === DISPLAY_TYPE.TEXT ||
-                displayType === DISPLAY_TYPE.NUMBER
-                  ? 'blur'
-                  : 'change',
-            });
-          }
-          rules.value[item.fieldName as string] = valids;
-          return true;
-        } else {
-          searchColumns.value = [];
-          rules.value = {};
+  () => [form.value, columns.value],
+  ([_form, _columns]) => {
+    let empty = false;
+    let messages: string[] = [];
+    let message: string = '';
+    if (_columns.length) {
+      _columns.forEach((item: Column) => {
+        if (
+          item['search.required'] &&
+          item['search.required'] === '1' &&
+          !_form[item.fieldName]
+        ) {
+          messages.push(item.caption);
+          empty = true;
         }
       });
-
-      if (newProps.params && typeof newProps.params === 'object') {
-        for (let k in newProps.params) {
-          if (newProps.params[k]) {
-            const findColumn = searchColumns.value.find((item) => {
-              return item.fieldName === k;
-            });
-            if (!!findColumn) {
-              form.value[k] = newProps.params[k];
-            }
-          }
-        }
-        console.log('form', form.value);
-      }
     }
+
+    if (empty) {
+      message = messages.join('、') + '为空！';
+    }
+
+    emitter.emit('onChangeEmpty', { empty, message });
   },
   { deep: true, immediate: true },
 );
@@ -209,12 +241,12 @@ onMounted(() => {
   const width = rootRef.value?.offsetWidth as number;
   rootWidth.value = width;
 });
+
+defineExpose({ getValue, setSearchForm, setSearchColumns });
 </script>
 
 <style scoped lang="scss">
 .search-root {
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
   padding: 24px 12px 6px;
   .searchItemWrapper {
     display: flex;
@@ -231,5 +263,8 @@ onMounted(() => {
       padding-bottom: 18px;
     }
   }
+}
+.searchItemWrapper ::v-deep .el-form-item__label {
+  font-size: 12px;
 }
 </style>
