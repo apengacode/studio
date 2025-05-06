@@ -6,6 +6,8 @@ export type Column = FieldData & {
   fieldName: string;
   caption: string;
   enUs: string;
+  'setting.show'?: boolean;
+  fixed?: 'right' | 'left' | undefined;
 };
 
 export interface RequestPage {
@@ -65,4 +67,12 @@ export interface SingleButton {
     params: { [key: string]: any },
     records: { [key: string]: any }[],
   ) => void;
+}
+
+export interface SettingColumn {
+  id: string;
+  name: string;
+  disabled?: boolean;
+  sort?: number;
+  show?: boolean;
 }

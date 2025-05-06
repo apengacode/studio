@@ -2,11 +2,11 @@ import { createApp } from 'vue';
 import './assets/css/base.css';
 import './assets/css/tailwind.css';
 import './assets/css/variables.scss';
-import 'element-plus/dist/index.css'
+import 'element-plus/dist/index.css';
 import App from './App.vue';
 import { createPinia } from 'pinia';
 import router from './router';
-
+import '@/assets/iconfont/iconfont.css';
 
 const pinia = createPinia();
 

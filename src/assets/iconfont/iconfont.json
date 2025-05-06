@@ -1,0 +1,30 @@
+{
+  "id": "",
+  "name": "",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "4767081",
+      "name": "font-size",
+      "font_class": "font-size",
+      "unicode": "e7f7",
+      "unicode_decimal": 59383
+    },
+    {
+      "icon_id": "15838468",
+      "name": "export",
+      "font_class": "export",
+      "unicode": "e66e",
+      "unicode_decimal": 58990
+    },
+    {
+      "icon_id": "22954397",
+      "name": "拖动",
+      "font_class": "tuodong",
+      "unicode": "e61c",
+      "unicode_decimal": 58908
+    }
+  ]
+}

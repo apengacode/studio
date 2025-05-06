@@ -9,18 +9,6 @@
         :buttons="getButtons"
         select-label="{KCH}【{KCM}】"
         select-value="WID"
-        :default-selections="[
-          {
-            WID: 'ba13df81739942898cdedf5b3377f267',
-            KCH: '20240705',
-            KCM: 'xjwang-课程',
-          },
-          {
-            WID: '58bcab074b044b49b9e20bf64b15b5aa',
-            KCH: '20240705',
-            KCM: 'xjwang-课程',
-          },
-        ]"
       />
     </el-card>
   </article>
@@ -44,6 +32,7 @@ const getButtons: () => Promise<Button[]> = () => {
           checkRecords: false,
           permission: 'add',
           callback(params, records) {
+            console.log('params', params)
           },
         },
         {

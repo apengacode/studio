@@ -2,81 +2,46 @@
   <div class="grid-root" title="asdasdasd">
     <div class="grid-selection" ref="selectionRef" v-show="selections.length">
       <div class="selection-left">
-        <el-tag
-          v-for="tag in selections"
-          :key="tag[selectValue]"
-          closable
-          :disable-transitions="false"
-          @close="onRemoveSelection(tag)"
-        >
+        <el-tag v-for="tag in selections" :key="tag[selectValue]" closable :size="size" :disable-transitions="false" @close="onRemoveSelection(tag)">
           {{ formatterLabel(tag) }}
         </el-tag>
       </div>
       <div class="selection-right">
-        <el-button
-          @click="() => (selectionSwitchStatus = !selectionSwitchStatus)"
-          link
-          type="primary"
-          size="small"
-          >{{ selectionSwitchStatus ? '收起' : '展开' }}</el-button
-        >
+        <el-button @click="() => (selectionSwitchStatus = !selectionSwitchStatus)" link type="primary" :size="size">{{ selectionSwitchStatus ? '收起' :
+          '更多' }}</el-button>
       </div>
     </div>
     <div class="table-root">
-      <el-table
-        ref="tableRef"
-        :data="data"
-        :empty-text="emptyMessage"
-        v-loading="dataLoading"
-        height="100%"
-        style="width: 100%"
-        :row-key="selectValue"
-        @select="onSelect"
-        @select-all="onSelectAll"
-      >
+      <el-table ref="tableRef" :data="data" :empty-text="emptyMessage" v-loading="dataLoading" height="100%" style="width: 100%"
+        :row-key="selectValue" @select="onSelect" @select-all="onSelectAll" :size="size">
         <template v-if="selection">
-          <el-table-column type="selection" width="55" />
+          <el-table-column type="selection" fixed="left" width="55" />
         </template>
-        <template v-for="column in gridColumns" :key="column.fieldName">
-          <el-table-column :prop="column.fieldName" :label="column.caption" />
+        <template v-for="column in columns" :key="column.fieldName">
+          <template v-if="column['setting.show'] !== false">
+            <el-table-column :prop="column.fieldName" :label="column.caption" :width="column['grid.width']" :fixed="column.fixed" />
+          </template>
         </template>
-        <el-table-column
-          label="操作"
-          v-if="buttons.length"
-          :width="operationWidth"
-          fixed="right"
-        >
+        <el-table-column label="操作" v-if="buttons.length" :width="operationWidth" fixed="right">
           <template #default="scope">
             <div class="operation-wrapper">
               <template v-for="btn in buttons" :key="btn.key">
                 <div v-if="!btn.children" class="row-button">
-                  <el-button
-                    v-if="buttonShow(scope.row, btn)"
-                    link
-                    type="primary"
-                    size="small"
-                    @click="onButtonClick(scope.row, btn)"
-                    >{{ btn.text }}</el-button
-                  >
+                  <el-button v-if="buttonShow(scope.row, btn)" link type="primary" :size="size" @click="onButtonClick(scope.row, btn)">{{ btn.text
+                  }}</el-button>
                 </div>
                 <template v-else>
-                  <el-dropdown
-                    trigger="click"
-                    class="row-button"
-                    v-if="dropdownShow(scope.row, btn)"
-                  >
-                    <el-button link type="primary" size="small">
-                      {{ btn.text
-                      }}<el-icon class="el-icon--right"><arrow-down /></el-icon
-                    ></el-button>
+                  <el-dropdown trigger="click" :size="size" v-if="dropdownShow(scope.row, btn)">
+                    <div class="row-button">
+                      <el-button link type="primary" :size="size">
+                        {{ btn.text
+                        }}<el-icon class="el-icon--right"><arrow-down /></el-icon></el-button>
+                    </div>
                     <template #dropdown>
                       <el-dropdown-menu>
                         <template v-for="cbtn in btn.children" :key="cbtn.key">
-                          <el-dropdown-item
-                            v-if="buttonShow(scope.row, cbtn)"
-                            @click.native="onButtonClick(scope.row, cbtn)"
-                            >{{ cbtn.text }}</el-dropdown-item
-                          >
+                          <el-dropdown-item v-if="buttonShow(scope.row, cbtn)" @click.native="onButtonClick(scope.row, cbtn)">{{ cbtn.text
+                          }}</el-dropdown-item>
                         </template>
                       </el-dropdown-menu>
                     </template>
@@ -106,10 +71,11 @@ import emitter from '@/utils/bus';
 import { replacePlaceholders } from '../utils';
 import type { ElTable } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue';
+import { useDebounceFn } from '@/utils/fn';
 
 const props = withDefaults(
   defineProps<{
-    columns?: Column[];
+    columns: Column[];
     dataResourse: any[];
     dataLoading: boolean;
     selection: boolean;
@@ -118,9 +84,9 @@ const props = withDefaults(
     defaultSelections: { [key: string]: any }[];
     buttons: SingleButton[];
     getParams: () => { [key: string]: any };
+    size: 'small' | 'default' | 'large';
   }>(),
   {
-    columns: () => [],
     dataResourse: () => [],
     dataLoading: false,
     defaultSelections: () => [],
@@ -140,31 +106,25 @@ const {
 } = toRefs(props);
 
 const state = reactive<{
-  gridColumns: Column[];
   data: any[];
   isEmpty: boolean;
   emptyMessage: string;
   selections: any[];
   selectionSwitchStatus: boolean;
-  // operationWidth: number;
 }>({
-  gridColumns: [],
   isEmpty: false,
   emptyMessage: '',
   data: [],
   selections: [],
   selectionSwitchStatus: false,
-  // operationWidth: 1000,
 });
 
 const {
-  gridColumns,
   data,
   isEmpty,
   emptyMessage,
   selections,
   selectionSwitchStatus,
-  // operationWidth,
 } = toRefs(state);
 
 const selectionRef = ref<HTMLElement | null>(null);
@@ -232,10 +192,14 @@ const operationWidth = computed(() => {
   return width;
 });
 
-const onButtonClick = (row: { [key: string]: any }, btn: SingleButton) => {
-  const params = getParams.value();
-  btn.callback && btn.callback(params, [row]);
-};
+const { run: onButtonClick } = useDebounceFn(
+  (row: { [key: string]: any }, btn: SingleButton) => {
+    const params = getParams.value();
+    btn.callback && btn.callback(params, [row]);
+  },
+  1000,
+  { leading: true, trailing: false },
+);
 
 const buttonShow = (row: { [key: string]: any }, btn: SingleButton) => {
   if (btn.beforRender && typeof btn.beforRender === 'function') {
@@ -252,28 +216,19 @@ const dropdownShow = (row: { [key: string]: any }, btn: SingleButton) => {
   });
 };
 
+const sizeHeightMap = {
+  small: '28px',
+  default: '32px',
+  large: '40px',
+};
+
 watch(selectionSwitchStatus, (status) => {
   if (selectionRef.value) {
-    selectionRef.value.style.height = status ? 'auto' : '32px';
+    selectionRef.value.style.height = status
+      ? 'auto'
+      : sizeHeightMap[props.size];
   }
 });
-
-watch(
-  columns,
-  (newColumns) => {
-    if (newColumns && newColumns.length) {
-      gridColumns.value = newColumns.filter((column) => {
-        let hidden = column['grid.hidden'] || column['hidden'];
-
-        if (hidden) {
-          return hidden === '0';
-        }
-        return true;
-      });
-    }
-  },
-  { deep: true, immediate: true },
-);
 
 watch(
   () => [dataResourse.value, isEmpty.value],
@@ -318,29 +273,39 @@ defineExpose({ getIsEmpty, getCheckRecord });
   display: flex;
   flex-direction: column;
   padding-top: 8px;
+
   .table-root {
     flex: 1;
     height: 0;
     padding-top: 8px;
   }
 }
+
 .grid-selection {
   display: flex;
   align-items: flex-start;
   overflow: hidden;
-  height: 32px;
+  padding-top: 8px;
+
   .selection-left {
     flex: 1;
     width: 0;
   }
-  .selection-right {
-  }
+
+  .selection-right {}
 }
+
 .operation-wrapper {
   width: 100%;
   display: flex;
+
   .row-button {
     padding: 0 4px;
+    display: flex;
+    align-items: center;
   }
 }
-</style>
+
+// .dropdown-button ::v-deep button span {
+
+//   }</style>

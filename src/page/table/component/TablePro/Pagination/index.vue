@@ -4,7 +4,7 @@
       v-model:current-page="props.page.pageIndex"
       v-model:page-size="props.page.pageSize"
       :page-sizes="[10, 20, 50, 100]"
-      :small="true"
+      size="small"
       :disabled="false"
       background
       layout="total, sizes, prev, pager, next, jumper"
@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import type { Page } from '../type';
 
-const props = defineProps<{ page: Page }>();
+const props = defineProps<{ page: Page, size: "small" | "default" | "large"; }>();
 
 const emits = defineEmits(['pageSizeChange', 'pageIndexChange'])
 

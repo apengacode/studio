@@ -1,6 +1,6 @@
 <template>
   <div class="search-root">
-    <el-form :model="form" :rules="rules">
+    <el-form :model="form" :rules="rules" :size="props.size">
       <div class="searchItemWrapper" ref="rootRef">
         <div
           class="searchItem"
@@ -15,12 +15,13 @@
               :displayType="getSearchDisplayType(column)"
               :placeholder="getSearchPlaceholder(column)"
               :readonly="getSearchReadonly(column)"
+              :size="size"
             />
           </el-form-item>
         </div>
 
         <div class="searchButtons" :style="searchButtonsStyle">
-          <el-button type="primary" :loading="dataLoading" @click="onSearch">查询</el-button>
+          <el-button type="primary" @click="onSearch">查询</el-button>
           <el-button @click="onReset">重置</el-button>
           <el-button text link type="primary" @click="onChangeSwitch"
             >{{ switchStatus === '0' ? '展开' : '收起'
@@ -42,25 +43,25 @@ import WidgetWrapper from '../widget/WidgetWrapper.vue';
 import { DISPLAY_TYPE } from '@/const';
 import emitter from '@/utils/bus';
 
-
 const buttonWidth = 220;
 const searchItemWidth = 300;
 
 const props = withDefaults(
   defineProps<{
     params?: { [key: string]: any } | (() => Promise<{ [key: string]: any }>);
+    columns: Column[];
     defaultSearchSwitch?: string;
     dataLoading: boolean;
+    size: 'small' | 'default' | 'large';
   }>(),
   { defaultSearchSwitch: '0', dataLoading: false },
 );
 
 const rootRef = ref<HTMLElement | null>(null);
 
-const { defaultSearchSwitch, dataLoading } = toRefs(props);
+const { defaultSearchSwitch, columns } = toRefs(props);
 
 const state = reactive<{
-  columns: Column[];
   form: any;
   rootWidth: number;
   switchStatus: string;
@@ -70,10 +71,9 @@ const state = reactive<{
   rootWidth: 0,
   switchStatus: defaultSearchSwitch.value,
   rules: [],
-  columns: [],
 });
 
-const { form, rootWidth, switchStatus, rules, columns } = toRefs(state);
+const { form, rootWidth, switchStatus, rules } = toRefs(state);
 
 const emits = defineEmits(['searchPage', 'resetPage']);
 
@@ -164,28 +164,31 @@ const setSearchForm = (val: any) => {
   form.value = { ...defaultParams };
 };
 
-const setSearchColumns = (_columns: Column[]) => {
-  columns.value = _columns;
-  const _rules: { [key: string]: any[] } = {};
-  _columns.forEach((item) => {
-    const valids = [];
-    const displayType = item['search.displayType'] || item.displayType;
+watch(
+  columns,
+  (_columns) => {
+    const _rules: { [key: string]: any[] } = {};
+    _columns.forEach((item) => {
+      const valids = [];
+      const displayType = item['search.displayType'] || item.displayType;
 
-    if (item['search.required'] && item['search.required'] === '1') {
-      valids.push({
-        required: true,
-        message: item.caption + '必填！',
-        trigger:
-          displayType === DISPLAY_TYPE.TEXT ||
-          displayType === DISPLAY_TYPE.NUMBER
-            ? 'blur'
-            : 'change',
-      });
-      _rules[item.fieldName] = valids;
-    }
-  });
-  rules.value = _rules;
-};
+      if (item['search.required'] && item['search.required'] === '1') {
+        valids.push({
+          required: true,
+          message: item.caption + '必填！',
+          trigger:
+            displayType === DISPLAY_TYPE.TEXT ||
+            displayType === DISPLAY_TYPE.NUMBER
+              ? 'blur'
+              : 'change',
+        });
+        _rules[item.fieldName] = valids;
+      }
+    });
+    rules.value = _rules;
+  },
+  { deep: true, immediate: true },
+);
 watch(
   () => [switchStatus.value, columns.value],
   (newVal) => {
@@ -242,12 +245,14 @@ onMounted(() => {
   rootWidth.value = width;
 });
 
-defineExpose({ getValue, setSearchForm, setSearchColumns });
+defineExpose({ getValue, setSearchForm });
 </script>
 
 <style scoped lang="scss">
 .search-root {
-  padding: 24px 12px 6px;
+  padding: 24px 0 6px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
   .searchItemWrapper {
     display: flex;
     align-items: center;
@@ -263,8 +268,5 @@ defineExpose({ getValue, setSearchForm, setSearchColumns });
       padding-bottom: 18px;
     }
   }
-}
-.searchItemWrapper ::v-deep .el-form-item__label {
-  font-size: 12px;
 }
 </style>
