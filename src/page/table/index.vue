@@ -1,15 +1,12 @@
 <template>
   <article>
     <el-card class="table-card">
-      <TablePro
-        action="1-1-1"
-        :changeColumns="onChangeColumns"
-        :params="onGetDefaultParams"
-        :request="onRequest"
-        :buttons="getButtons"
-        select-label="{KCH}【{KCM}】"
-        select-value="WID"
-      />
+      <TablePro action="1-1-1" :params="onGetDefaultParams" :request="onRequest" :buttons="getButtons"
+        select-label="{KCH}【{KCM}】" select-value="WID" @on-export="onExport" >
+        <template #KCH="scope">
+          <el-tag>{{ scope.row.KCH }}</el-tag>
+        </template>
+      </TablePro>
     </el-card>
   </article>
 </template>
@@ -41,7 +38,7 @@ const getButtons: () => Promise<Button[]> = () => {
           permission: 'delete',
           canBatch: true,
           checkRecords: true,
-          callback() {},
+          callback() { },
         },
         {
           key: 'audit',
@@ -67,17 +64,17 @@ const getButtons: () => Promise<Button[]> = () => {
               beforRender(row) {
                 return true;
               },
-              callback() {},
+              callback() { },
             },
           ],
-          callback() {},
+          callback() { },
         },
         {
           key: 'export',
           text: '导出',
           canBatch: true,
           checkRecords: true,
-          callback() {},
+          callback() { },
         },
         {
           key: 'edit',
@@ -92,7 +89,7 @@ const getButtons: () => Promise<Button[]> = () => {
           key: 'detail',
           text: '详情',
           canSingle: true,
-          callback() {},
+          callback() { },
         },
         {
           key: 'more',
@@ -118,66 +115,18 @@ const getButtons: () => Promise<Button[]> = () => {
               beforRender(row) {
                 return true;
               },
-              callback() {},
+              callback() { },
             },
           ],
-          callback() {},
+          callback() { },
         },
       ]);
     }, 10);
   });
 };
-
-const buttons: Button[] = [
-  {
-    key: 'add',
-    text: '新增',
-    type: 'primary',
-    canBatch: true,
-    checkRecords: false,
-    permission: 'add',
-    callback(params, records) {
-      console.log(params);
-      console.log(records);
-    },
-  },
-  {
-    key: 'delete',
-    text: '删除',
-    permission: 'delete',
-    canBatch: true,
-    checkRecords: true,
-    callback() {},
-  },
-  {
-    key: 'audit',
-    text: '审核',
-    type: 'warning',
-    canBatch: true,
-    canSingle: true,
-    checkRecords: true,
-    callback() {},
-  },
-  {
-    key: 'export',
-    text: '导出',
-    canBatch: true,
-    checkRecords: true,
-    callback() {},
-  },
-  {
-    key: 'edit',
-    text: '编辑',
-    canSingle: true,
-    callback() {},
-  },
-  {
-    key: 'detail',
-    text: '详情',
-    canSingle: true,
-    callback() {},
-  },
-];
+const onExport = (params: any, checkrecords: any) => {
+  console.log('导出', params, checkrecords);
+}
 
 const onChangeColumns: (columns: Column[]) => Promise<Column[]> = (columns) => {
   return new Promise((resolve) => {
@@ -225,7 +174,7 @@ const onRequest = async (
   return res;
 };
 
-onMounted(() => {});
+onMounted(() => { });
 </script>
 
 <style scoped lang="scss">
@@ -234,10 +183,12 @@ article {
   height: 100%;
   padding: 8px;
 }
+
 .table-card {
   width: 100%;
   height: 100%;
 }
+
 .table-card ::v-deep .el-card__body {
   width: 100%;
   height: 100%;

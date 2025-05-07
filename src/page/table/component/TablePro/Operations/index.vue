@@ -23,14 +23,20 @@
       </template>
     </div>
     <div class="operation-tools">
-      <el-button v-if="existExport" class="operation-tools-item" type="primary" link>
+
+      <!----------------- 导出 ----------------->
+      <el-button v-if="existExport" class="operation-tools-item" type="primary" link @click="emits('exportExcel')">
         <i :style="{ fontSize: SizeMap[size] }" class="iconfont icon-export" />
       </el-button>
+
+      <!----------------- 刷新 ----------------->
       <el-button v-if="existRefresh" class="operation-tools-item" :size="size" type="primary" @click="onRefresh" link>
         <el-icon :size="SizeMap[size]">
           <RefreshRight />
         </el-icon>
       </el-button>
+
+      <!----------------- 大小 ----------------->
       <el-dropdown v-if="existSize" trigger="click" :size="size" class="operation-button">
         <el-button class="operation-tools-item" :size="size" type="primary" link>
           <i :style="{ fontSize: SizeMap[size] }" class="iconfont icon-font-size" />
@@ -47,7 +53,7 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-
+      <!----------------- 设置 ----------------->
       <el-popover placement="bottom-start" :width="400" trigger="click">
         <template #reference>
           <el-button v-if="existSetting" class="operation-tools-item" :size="size" type="primary" link>
@@ -251,8 +257,8 @@ const { checkeds, notFixedColumn, fixedRightColumn, fixedLeftColumn } =
 const emits = defineEmits([
   'doRefresh',
   'changeSize',
-  'changeGridColumnVisible',
   'changeColumnPosition',
+  'exportExcel'
 ]);
 
 const { run: onButtonClick } = useDebounceFn(

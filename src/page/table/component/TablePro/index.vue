@@ -7,12 +7,16 @@
     <section class="tablepro-operation">
       <Operation :buttons="batchButtons" :get-params="getParams" :get-pagetotal="getPagetotal" :get-checkrecord="getCheckrecord" :size="defaultSize"
         :exist-export="existExport" :exist-refresh="existRefresh" :exist-size="existSize" :exist-setting="existSetting" :columns="cloneGridColumns"
-        :selection="selection" @do-refresh="doRequest" @change-size="onChangeSize" @change-grid-column-visible="onChangeGridColumnVisible"
-        @change-column-position="onChangeColumnPosition" :hasOperate="singleButtons.length > 0" />
+        :selection="selection" @do-refresh="doRequest" @change-size="onChangeSize" @change-column-position="onChangeColumnPosition"
+        :hasOperate="singleButtons.length > 0" @export-excel="onExportExcel" />
     </section>
     <section class="tablepro-grid">
       <Grid ref="gridRef" :columns="gridColumns" :dataResourse="data" :dataLoading="dataLoading" :selection="selection" :select-value="selectValue"
-        :select-label="selectLabel" :default-selections="defaultSelections" :buttons="singleButtons" :get-params="getParams" :size="defaultSize" />
+        :select-label="selectLabel" :default-selections="defaultSelections" :buttons="singleButtons" :get-params="getParams" :size="defaultSize">
+        <template v-for="column in gridColumns" #[column.fieldName]="scope">
+          <slot :name="column.fieldName" v-bind="scope" />
+        </template>
+      </Grid>
     </section>
     <section class="tablepro-pagination">
       <Pagination :page="page" @pageSizeChange="onPageSizeChange" @pageIndexChange="onPageIndexChange" :size="defaultSize" />
@@ -22,6 +26,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, toRefs, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
 import { clone } from 'lodash';
 import Search from './Search/index.vue';
 import Operation from './Operations/index.vue';
@@ -133,7 +138,7 @@ const {
 const searchRef = ref<InstanceType<typeof Search> | null>(null);
 const gridRef = ref<InstanceType<typeof Grid> | null>(null);
 
-const emits = defineEmits(['request']);
+const emits = defineEmits(['request', 'onExport']);
 
 const getParams = () => {
   const requestParams = searchRef.value?.getValue();
@@ -172,15 +177,19 @@ const { run: doRequest } = useDebounceFn(
   { leading: false, trailing: true },
 );
 
+// 页码change
 const onPageSizeChange = (val: number) => {
   page.value.pageSize = val;
   doRequest();
 };
+
+// 当前页change
 const onPageIndexChange = (val: number) => {
   page.value.pageIndex = val;
   doRequest();
 };
 
+// 搜索 须将pageIndex重置为1
 const onSearch = () => {
   page.value = {
     pageIndex: 1,
@@ -191,6 +200,7 @@ const onSearch = () => {
   doRequest();
 };
 
+// 重置 须将pageIndex重置为1
 const onSearchReset = () => {
   page.value = {
     pageIndex: 1,
@@ -201,26 +211,22 @@ const onSearchReset = () => {
   doRequest();
 };
 
+// 获取表格数据总数
 const getPagetotal = () => {
   return page.value.total;
 };
+
+// 获取表格勾选内容
 const getCheckrecord = () => {
   return gridRef.value?.getCheckRecord() as { [key: string]: any }[];
 };
 
+// 控制组件的大小
 const onChangeSize = (size: 'small' | 'default' | 'large') => {
   defaultSize.value = size;
 };
 
-const onChangeGridColumnVisible = (checkeds: string[]) => {
-  gridColumns.value = gridColumns.value.map((item) => {
-    return {
-      ...item,
-      'setting.show': checkeds.includes(item.fieldName),
-    };
-  });
-};
-
+// 控制列的位置
 const onChangeColumnPosition = (
   fixedLeftColumn: SettingColumn[],
   notFixedColumn: SettingColumn[],
@@ -265,7 +271,25 @@ const onChangeColumnPosition = (
   })
 };
 
+const onExportExcel = () => {
+  const params = getParams();
+  const total = page.value.total;
+  if (total === 0) {
+    ElMessage({
+      message: '没有可操作记录',
+      type: 'error',
+    });
+    return;
+  }
+  const checkrecords = getCheckrecord();
+  emits('onExport', {
+    params,
+    checkrecords,
+  });
+};
+
 watch(size, () => { }, { immediate: true });
+
 onMounted(async () => {
   // 设置字段
   tableLoading.value = true;

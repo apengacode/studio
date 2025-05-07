@@ -4,7 +4,7 @@
       v-model:current-page="props.page.pageIndex"
       v-model:page-size="props.page.pageSize"
       :page-sizes="[10, 20, 50, 100]"
-      size="small"
+      :size="size"
       :disabled="false"
       background
       layout="total, sizes, prev, pager, next, jumper"

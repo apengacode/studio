@@ -19,7 +19,15 @@
         </template>
         <template v-for="column in columns" :key="column.fieldName">
           <template v-if="column['setting.show'] !== false">
-            <el-table-column :prop="column.fieldName" :label="column.caption" :width="column['grid.width']" :fixed="column.fixed" />
+            <el-table-column :prop="column.fieldName" :label="column.caption" :width="column['grid.width']" :fixed="column.fixed">
+              <!-- 暴露作用域插槽 -->
+              <template #default="scope">
+                <!-- 默认内容：若父组件未定义插槽，显示原始值 -->
+                <slot :name="column.fieldName" v-bind="scope">
+                  {{ scope.row[column.fieldName] }}
+                </slot>
+              </template>
+            </el-table-column>
           </template>
         </template>
         <el-table-column label="操作" v-if="buttons.length" :width="operationWidth" fixed="right">
